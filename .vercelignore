@@ -1,0 +1,10 @@
+node_modules
+dist
+showcase
+*.zip
+*.tsbuildinfo
+.env*
+README.md
+SOURCES.md
+SUNUMU-AC.cmd
+serve.mjs
