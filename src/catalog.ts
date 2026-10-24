@@ -4,6 +4,34 @@ import { competitions } from "./competitions";
 // School activities and their dates are invented presentation fixtures, never real registrations.
 export const catalog: Opportunity[] = [
   {
+    id: "ankara-robotik-atolye",
+    title: "Bilim merkezinde robotik atölyesi",
+    description:
+      "Bir öğleden sonra boyunca hazır setlerle basit bir robot kur ve programla. İl kısıtlı örnek fırsat: yalnızca Ankara'daki öğrencilere açık.",
+    provider: "Örnek: il bilim merkezi",
+    kind: "deneyim",
+    fields: ["teknoloji", "tasarim"],
+    minGrade: 9,
+    maxGrade: 12,
+    hours: 1,
+    cost: 0,
+    access: "her",
+    experienceRequired: false,
+    demo: true,
+    accent: "blue",
+    deadline: "2026-11-14",
+    mode: "yuzyuze",
+    city: "Ankara",
+    onlyCities: ["Ankara"],
+    outcome: "Çalışan küçük bir robot ve hangi rolü sevdiğine dair kısa bir not.",
+    steps: [
+      "Atölye sayfasındaki katılım koşullarını oku.",
+      "Velinden izin al ve kayıt formunu doldur.",
+      "Atölyeden sonra neyi sevdiğini iki cümleyle yaz.",
+    ],
+    roles: ["Kodlama", "Tasarım"],
+  },
+  {
     id: "tasarim-denemesi",
     title: "Okul hayatını kolaylaştıran bir ekran tasarla",
     description:
@@ -82,6 +110,7 @@ export const catalog: Opportunity[] = [
   },
   {
     id: "2204-arastir",
+    mode: "hibrit",
     organization: "tubitak",
     competitionStatus: "open",
     feeStatus: "free",

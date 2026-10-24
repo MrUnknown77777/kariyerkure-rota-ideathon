@@ -21,14 +21,21 @@ import { catalog, opportunityById } from "./catalog";
 import {
   addReflection,
   createTrack,
+  distinctReasons,
   eligibility,
   recommendations,
   setTask,
   toggleSaved,
 } from "./engine";
-import { DEMO_TODAY, fieldLabels, formatDate, kindLabels } from "./model";
+import {
+  DEMO_TODAY,
+  fieldLabels,
+  formatDate,
+  kindLabels,
+  modeLabels,
+} from "./model";
 import { CompetitionInfo, ProgressJournal } from "./CompetitionTracking";
-import type { Kind, Reflection } from "./model";
+import type { Kind, Opportunity, Reflection } from "./model";
 import {
   Choice,
   Empty,
@@ -51,7 +58,9 @@ export function Opportunities({ initialKind }: { initialKind?: string }) {
     initialKind === "yarisma" ? "yarisma" : "all",
   );
   const [query, setQuery] = useState("");
+  const [mode, setMode] = useState<keyof typeof modeLabels | "all">("all");
   const recommended = recommendations(state);
+  const cardReasons = distinctReasons(recommended);
   const base =
     view === "sana"
       ? recommended.map((result) => result.item)
@@ -61,6 +70,7 @@ export function Opportunities({ initialKind }: { initialKind?: string }) {
   const items = base.filter(
     (item) =>
       (kind === "all" || item.kind === kind) &&
+      (mode === "all" || item.mode === mode) &&
       `${item.title} ${item.provider} ${item.fields.map((field) => fieldLabels[field]).join(" ")}`
         .toLocaleLowerCase("tr-TR")
         .includes(query.toLocaleLowerCase("tr-TR")),
@@ -126,6 +136,19 @@ export function Opportunities({ initialKind }: { initialKind?: string }) {
           </button>
         ))}
       </div>
+      <div className="filter-chips mode-chips" aria-label="Katılım biçimi">
+        <span className="chip-label">Katılım:</span>
+        {(["all", "cevrimici", "yuzyuze", "hibrit"] as const).map((value) => (
+          <button
+            key={value}
+            className={mode === value ? "active" : ""}
+            onClick={() => setMode(value)}
+            aria-pressed={mode === value}
+          >
+            {value === "all" ? "Hepsi" : modeLabels[value]}
+          </button>
+        ))}
+      </div>
       <div className="catalog-caption">
         <span>
           {items.length} seçenek
@@ -142,9 +165,11 @@ export function Opportunities({ initialKind }: { initialKind?: string }) {
             const added = state.tracks.some(
               (track) => track.opportunityId === item.id,
             );
-            const reason = recommended.find(
-              (result) => result.item.id === item.id,
-            )?.reasons[0];
+            const reason = cardReasons.get(item.id);
+            const mismatch =
+              view !== "sana" && state.profile
+                ? eligibility(item, state.profile)[0]
+                : undefined;
             return (
               <article key={item.id} className="panel opportunity-card">
                 <div className="opportunity-top">
@@ -209,17 +234,21 @@ export function Opportunities({ initialKind }: { initialKind?: string }) {
                   </span>
                   <span>
                     <MapPin size={14} />
-                    {item.access === "okul"
-                      ? "Okul içinde"
-                      : item.access === "ev"
-                        ? "Evden"
-                        : "Okul / ev"}
+                    {placeLabel(item)}
                   </span>
                 </div>
                 {reason && view === "sana" ? (
                   <div className="recommendation-reason">
                     <Sparkles size={14} />
-                    <span>{reason}</span>
+                    <span>
+                      <strong>Neden sana?</strong> {reason}
+                    </span>
+                  </div>
+                ) : mismatch ? (
+                  <div className="recommendation-reason mismatch">
+                    <span>
+                      <strong>Şu an sana uymuyor:</strong> {mismatch}
+                    </span>
                   </div>
                 ) : null}
                 <div className="opportunity-bottom">
@@ -512,7 +541,7 @@ export function OpportunityDetail({ id }: { id: string }) {
               </small>
             </section>
           )}
-          {track && !reflection && ["kulup", "proje"].includes(item.kind) ? (
+          {track && !reflection && ["kulup", "proje", "yarisma"].includes(item.kind) ? (
             <section className="panel team-panel">
               <SectionHead
                 title="Birlikte denemek ister misin?"
@@ -630,7 +659,7 @@ export function OpportunityDetail({ id }: { id: string }) {
           ) : null}
           <section className="panel why-card">
             <span className="eyebrow">
-              <Sparkles size={13} /> NEDEN BU SEÇENEK?
+              <Sparkles size={13} /> NEDEN SANA?
             </span>
             {reason?.length ? (
               reason.slice(0, 3).map((value) => (
@@ -882,4 +911,18 @@ export function ReflectionPage({ id }: { id: string }) {
       </form>
     </>
   );
+}
+
+/** A1 · Kartta katılım biçimi ve şehir; il kısıtı varsa açıkça yazılır. */
+function placeLabel(item: Opportunity) {
+  const base = item.mode
+    ? modeLabels[item.mode]
+    : item.access === "okul"
+      ? "Okul içinde"
+      : item.access === "ev"
+        ? "Evden"
+        : "Okul / ev";
+  if (item.onlyCities?.length)
+    return `${base} · Yalnızca ${item.onlyCities.join(", ")}`;
+  return item.city ? `${base} · ${item.city}` : base;
 }

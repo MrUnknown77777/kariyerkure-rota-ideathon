@@ -69,6 +69,22 @@ export default function App() {
   const [state, setState] = useState(initial.state);
   const [storageWarning, setStorageWarning] = useState(initial.warning ?? "");
   const [mobileMenu, setMobileMenu] = useState(false);
+  const [largeText, setLargeText] = useState(() => {
+    try {
+      return window.localStorage.getItem("kariyerkure-rota:buyuk-yazi") === "1";
+    } catch {
+      return false;
+    }
+  });
+  useEffect(() => {
+    // Erişilebilirlik: büyük yazı tercihi (bu tarayıcıda hatırlanır).
+    document.documentElement.classList.toggle("large-text", largeText);
+    try {
+      window.localStorage.setItem("kariyerkure-rota:buyuk-yazi", largeText ? "1" : "0");
+    } catch {
+      /* kayıt kapalıysa yalnızca bu oturumda geçerli */
+    }
+  }, [largeText]);
   const hash = useSyncExternalStore(subscribeHash, hashValue);
   const path = hash || (state.profile ? "rotam" : "baslangic");
   const [page, id] = path.split("/");
@@ -172,6 +188,17 @@ export default function App() {
                 </span>
                 <ChevronRight size={16} />
               </a>
+              <button
+                className="sidebar-help a11y-toggle"
+                aria-pressed={largeText}
+                onClick={() => setLargeText(!largeText)}
+              >
+                <span aria-hidden="true" className="a11y-glyph">Aa</span>
+                <span>
+                  {largeText ? "Büyük yazı açık" : "Büyük yazı"}
+                  <small>Okumayı kolaylaştırır</small>
+                </span>
+              </button>
               <a href="#/hedefim" className="profile-link">
                 <span className="avatar">
                   {state.profile?.name.slice(0, 1) ?? "K"}

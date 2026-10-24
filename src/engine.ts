@@ -42,7 +42,40 @@ export function eligibility(item: Opportunity, profile: Profile): string[] {
     reasons.push("Önce bir proje deneyimi gerekiyor.");
   if (item.deadline && item.deadline < DEMO_TODAY)
     reasons.push("Başvuru tarihi geçmiş.");
+  if (
+    item.onlyCities?.length &&
+    profile.city &&
+    !item.onlyCities.includes(profile.city)
+  )
+    reasons.push(
+      `Yalnızca ${item.onlyCities.join(", ")} ilindeki öğrencilere açık.`,
+    );
   return reasons;
+}
+
+const kindPurpose: Record<Opportunity["kind"], string> = {
+  deneyim: "kısa bir denemeyle tanıman için",
+  kulup: "okulunda bir ekiple denemen için",
+  proje: "kendi küçük projene dönüştürmen için",
+  yarisma: "gerçek bir yarışmada sınaman için",
+  arastirma: "bir araştırma sorusuyla derinleştirmen için",
+  sinav: "hedefine giden hazırlığa bağlaman için",
+};
+
+/** Listede her karta, üstteki kartlarda henüz kullanılmamış ilk doğru gerekçeyi seçer. */
+export function distinctReasons(
+  results: { item: Opportunity; reasons: string[] }[],
+) {
+  const used = new Set<string>();
+  const chosen = new Map<string, string>();
+  for (const { item, reasons } of results) {
+    const pick = reasons.find((reason) => !used.has(reason)) ?? reasons[0];
+    if (pick) {
+      used.add(pick);
+      chosen.set(item.id, pick);
+    }
+  }
+  return chosen;
 }
 
 export function recommendations(state: State) {
@@ -66,7 +99,11 @@ export function recommendations(state: State) {
         profile.interests.includes(field),
       );
       let score = overlap.length * 12;
-      const reasons: string[] = [];
+      // Gerekçe sırası (KARARLAR.md, A2): deneyim tercihi → ilgi + tür → hedef bölüm → pratik uygunluk
+      const preference: string[] = [];
+      const interest: string[] = [];
+      const target: string[] = [];
+      const practical: string[] = [];
       const relevantTargets = selectedDepartments(profile).filter((target) =>
         target.fields.some((field) => item.fields.includes(field)),
       );
@@ -74,12 +111,12 @@ export function recommendations(state: State) {
         score += 26;
       if (item.competitionStatus === "open") score += 4;
       if (overlap.length)
-        reasons.push(
-          `${overlap.map((field) => fieldLabels[field]).join(" ve ")} ilginle bağlantılı.`,
+        interest.push(
+          `${overlap.map((field) => fieldLabels[field]).join(" ve ")} ilgini ${kindPurpose[item.kind]}.`,
         );
-      else reasons.push("Farklı bir alanı küçük bir adımla tanıman için.");
+      else interest.push(`Farklı bir alanı ${kindPurpose[item.kind]}.`);
       if (relevantTargets.length)
-        reasons.unshift(
+        target.push(
           `${relevantTargets[0].name} hedefindeki alanı deneyerek tanıman için.`,
         );
       if (profile.first === "dene" && item.kind === "deneyim") score += 22;
@@ -91,10 +128,14 @@ export function recommendations(state: State) {
       if (profile.goal === "alan" && item.id === "bolum-atlas") score += 22;
       if (isSenior(profile) && item.kind === "sinav") {
         score += 32;
-        reasons.push("11–12. sınıf hazırlığını hedefinle ilişkilendirir.");
+        target.push("11–12. sınıf hazırlığını hedefinle ilişkilendirir.");
       }
+      if (item.mode === "cevrimici")
+        practical.push("Çevrim içi; bulunduğun yerden katılabilirsin.");
+      else if (item.city && item.city === profile.city)
+        practical.push("Senin ilinde yapılıyor.");
       if (item.hours <= 1)
-        reasons.push(
+        practical.push(
           "İlk araştırma ve hazırlık için haftada en fazla bir saat.",
         );
       if (previous && latest) {
@@ -103,7 +144,7 @@ export function recommendations(state: State) {
         );
         if (latest.next === "devam" && related && item.kind !== "deneyim") {
           score += 30;
-          reasons.unshift(
+          preference.push(
             "Son deneyiminden sonra aynı alanda devam etmek istedin.",
           );
         }
@@ -118,17 +159,18 @@ export function recommendations(state: State) {
           )
         ) {
           score += 24;
-          reasons.unshift("Aynı alanda başka bir rol denemek istedin.");
+          preference.push("Aynı alanda başka bir rol denemek istedin.");
         }
         if (latest.next === "baska" && !related) {
           score += 50;
-          reasons.unshift("Başka bir alanı keşfetmek istediğin için.");
+          preference.push("Başka bir alanı keşfetmek istediğin için.");
         }
         if (latest.next === "ara")
-          reasons.push(
+          practical.push(
             "Ara verme tercihin korunuyor; bu yalnızca bir seçenek.",
           );
       }
+      const reasons = [...preference, ...interest, ...target, ...practical];
       return { item, score, reasons };
     })
     .sort((a, b) => b.score - a.score || a.item.id.localeCompare(b.item.id));
@@ -426,6 +468,8 @@ export function validProfile(value: unknown): value is Profile {
     ["her", "ev", "okul"].includes(String(value.access)) &&
     typeof value.freeOnly === "boolean" &&
     text(value.target) &&
+    (value.city === undefined ||
+      (typeof value.city === "string" && value.city.length <= 40)) &&
     (value.departments === undefined ||
       (Array.isArray(value.departments) &&
         value.departments.length <= 3 &&
@@ -640,4 +684,114 @@ export function persistState(
   } catch {
     return false;
   }
+}
+
+const dayDiff = (from: string, to: string) =>
+  Math.round(
+    (new Date(`${to}T12:00:00`).getTime() -
+      new Date(`${from}T12:00:00`).getTime()) /
+      86400000,
+  );
+
+/**
+ * A3 · Demo hatırlatması: takip edilen (kaydedilmiş ya da rotadaki) fırsatların en yakın
+ * son tarihi ve sıradaki hazırlık işi. Gerçek üründe telefon bildirimi olur; prototipte uygulama içi bildirimdir.
+ */
+export function upcomingReminder(state: State) {
+  const reflected = new Set(state.reflections.map((item) => item.opportunityId));
+  const active = state.tracks.filter(
+    (track) => !track.paused && !reflected.has(track.opportunityId),
+  );
+  const followed = new Set([
+    ...state.saved,
+    ...active.map((track) => track.opportunityId),
+  ]);
+  const deadlines = [...followed]
+    .map((id) => opportunityById(id))
+    .filter(
+      (item): item is Opportunity =>
+        !!item?.deadline && item.deadline >= DEMO_TODAY,
+    )
+    .sort((a, b) => a.deadline!.localeCompare(b.deadline!));
+  const nextTask = active
+    .flatMap((track) =>
+      track.tasks
+        .filter((task) => !task.done && task.date >= DEMO_TODAY)
+        .map((task) => ({ task, track })),
+    )
+    .sort((a, b) =>
+      `${a.task.date}${a.task.time}`.localeCompare(`${b.task.date}${b.task.time}`),
+    )[0];
+  if (!deadlines.length && !nextTask) return null;
+  const nearest = deadlines[0];
+  const parts: string[] = [];
+  if (nearest) {
+    const days = dayDiff(DEMO_TODAY, nearest.deadline!);
+    parts.push(
+      days === 0
+        ? `${nearest.title}: son başvuru bugün.`
+        : `${nearest.title}: son başvuruya ${days} gün kaldı.`,
+    );
+  }
+  if (nextTask) {
+    const when =
+      nextTask.task.date === DEMO_TODAY
+        ? `bugün ${nextTask.task.time}`
+        : `${nextTask.task.date.slice(8)}.${nextTask.task.date.slice(5, 7)} ${nextTask.task.time}`;
+    parts.push(`Sıradaki hazırlık işin: ${nextTask.task.title} (${when}).`);
+  }
+  return {
+    title: "Hatırlatma",
+    description: parts.join(" "),
+    date: nearest?.deadline ?? nextTask?.task.date,
+  };
+}
+
+/** Mahremiyet: öğrenci paylaştığı özeti ve talebi her an geri çekebilir; öğretmen görünümünden kalkar. */
+export function withdrawRequest(state: State, id: string): State {
+  return {
+    ...state,
+    requests: state.requests.filter((request) => request.id !== id),
+  };
+}
+
+/**
+ * B2 / Y1 · Sınıfın fırsat özeti (öğretmen görünümü). Örnek sınıfın SAYILARI sabit örnek veridir;
+ * demo öğrencisinin kendi kayıt, rota ve talepleri canlı olarak eklenir. Ad, not, ölçek sonucu içermez.
+ */
+const SAMPLE_CLASS = {
+  name: "10-A (örnek sınıf)",
+  students: 28,
+  following: { "2204-arastir": 4, technovation: 2, "kanguru-matematik": 5 } as Record<string, number>,
+  teamSeekers: 2,
+};
+export function classSummary(state: State) {
+  const live = new Set([
+    ...state.saved,
+    ...state.tracks.map((track) => track.opportunityId),
+  ]);
+  const counts = new Map<string, number>(Object.entries(SAMPLE_CLASS.following));
+  for (const id of live) counts.set(id, (counts.get(id) ?? 0) + 1);
+  const rows = [...counts.entries()]
+    .map(([id, count]) => ({ item: opportunityById(id), count }))
+    .filter(
+      (row): row is { item: Opportunity; count: number } =>
+        !!row.item?.deadline && row.item.deadline >= DEMO_TODAY,
+    )
+    .sort((a, b) => a.item.deadline!.localeCompare(b.item.deadline!))
+    .slice(0, 4)
+    .map((row) => ({ ...row, days: dayDiff(DEMO_TODAY, row.item.deadline!) }));
+  const liveFollowing = live.size ? 1 : 0;
+  return {
+    className: SAMPLE_CLASS.name,
+    students: SAMPLE_CLASS.students,
+    followingStudents: 9 + liveFollowing,
+    teamSeekers:
+      SAMPLE_CLASS.teamSeekers +
+      state.requests.filter((request) => request.type === "ekip").length,
+    meetingRequests: state.requests.filter(
+      (request) => request.type === "gorusme" && !request.reply,
+    ).length,
+    rows,
+  };
 }

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   ArrowRight,
   ArrowUpRight,
@@ -22,7 +22,13 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { opportunityById } from "./catalog";
-import { calendarEvents, recommendations, setTask } from "./engine";
+import {
+  calendarEvents,
+  distinctReasons,
+  recommendations,
+  setTask,
+  upcomingReminder,
+} from "./engine";
 import {
   DEMO_TODAY,
   fieldLabels,
@@ -44,10 +50,30 @@ import {
 import TargetPicker from "./TargetPicker";
 import { selectedDepartments, selectedUniversities } from "./targets";
 
+let reminderShown = false;
+
 export function RoutePage() {
   const { state, setState } = useApp();
   const profile = state.profile;
   const [showMap, setShowMap] = useState(false);
+  const reminder = upcomingReminder(state);
+  useEffect(() => {
+    // A3 · Demo bildirimi: oturum başına bir kez. Gerçek üründe telefon bildirimi olarak gelir.
+    if (!reminder || reminderShown) return;
+    reminderShown = true;
+    const timer = window.setTimeout(
+      () =>
+        toast(reminder.title, {
+          description: reminder.description,
+          duration: 9000,
+          action: reminder.date
+            ? { label: "Takvimde gör", onClick: () => go(`takvim/${reminder.date}`) }
+            : undefined,
+        }),
+      700,
+    );
+    return () => window.clearTimeout(timer);
+  }, [reminder]);
   if (!profile) return null;
   const completed = new Set(
     state.reflections.map((item) => item.opportunityId),
@@ -58,6 +84,7 @@ export function RoutePage() {
   const nextTrack = active.find((track) => !track.paused);
   const suggested = recommendations(state);
   const first = suggested[0];
+  const cardReasons = distinctReasons(suggested);
   const nextTask = nextTrack?.tasks.find((task) => !task.done);
   const readyReflection =
     nextTrack && nextTrack.tasks.every((task) => task.done);
@@ -106,7 +133,7 @@ export function RoutePage() {
                 ? "Hazırlık işlerini tamamladın. Deneyimini kaydet; sıradaki seçeneği ne öğrendiğine göre bulalım."
                 : `${opportunityById(nextTrack.opportunityId)?.title} için hazırlığın devam ediyor.`
               : first
-                ? first.reasons[0]
+                ? (cardReasons.get(first.item.id) ?? first.reasons[0])
                 : "Ara verebilir, tercihlerini değiştirebilir veya tüm fırsatlara bakabilirsin."}
           </p>
           <div className="hero-actions">
@@ -145,7 +172,7 @@ export function RoutePage() {
             <path
               d="M69 204C38 142 243 186 218 115S71 125 106 48"
               fill="none"
-              stroke="#ded8f5"
+              stroke="#dbf2f0"
               strokeWidth="34"
               strokeLinecap="round"
             />
@@ -174,7 +201,7 @@ export function RoutePage() {
               cx="218"
               cy="132"
               r="29"
-              fill="#6749dc"
+              fill="#1a857c"
               stroke="white"
               strokeWidth="8"
             />
@@ -206,6 +233,7 @@ export function RoutePage() {
           </span>
         </div>
       </section>
+      <TodayStrip />
       <div className="route-content-grid">
         <div className="route-main-column">
           <section className="panel route-overview">
@@ -332,7 +360,7 @@ export function RoutePage() {
                       </span>
                     </div>
                     <h3>{item.title}</h3>
-                    <p>{reasons[0]}</p>
+                    <p>{cardReasons.get(item.id) ?? reasons[0]}</p>
                     <span className="suggestion-meta">
                       {item.deadline
                         ? `Son tarih · ${formatDate(item.deadline)}`
@@ -380,7 +408,7 @@ export function RoutePage() {
                     </div>
                     <span className="eyebrow">{item.provider}</span>
                     <h3>{item.title}</h3>
-                    <p>{reasons[0]}</p>
+                    <p>{cardReasons.get(item.id) ?? reasons[0]}</p>
                     <span className="suggestion-meta">
                       {item.hours <= 0.5
                         ? "25–30 dakika"
@@ -947,5 +975,50 @@ export function ProfilePage() {
         </p>
       </section>
     </>
+  );
+}
+
+/** A5 · "Bugün" şeridi: sıradaki iş, en yakın son tarih ve öğretmen yanıtı tek bakışta. */
+function TodayStrip() {
+  const { state } = useApp();
+  const reminder = upcomingReminder(state);
+  const pendingReplies = state.requests.filter((request) => !request.reply).length;
+  const lastReply = [...state.requests].reverse().find((request) => request.reply);
+  const followed = new Set([
+    ...state.saved,
+    ...state.tracks.map((track) => track.opportunityId),
+  ]).size;
+  return (
+    <section className="today-strip" aria-label="Bugün">
+      <div>
+        <span className="eyebrow">BUGÜN</span>
+        <strong>{followed ? `${followed} fırsatı takip ediyorsun` : "Henüz bir fırsat takip etmiyorsun"}</strong>
+        <small>
+          {followed ? "Tarihler takviminde, hazırlıkların rotanda." : "Fırsatlar'dan birini kaydet; tarihini senin yerine izleyelim."}
+        </small>
+      </div>
+      <div>
+        <span className="eyebrow">YAKLAŞAN</span>
+        <strong>{reminder ? reminder.description.split(". ")[0].replace(/\.$/, "") : "Yaklaşan bir son tarih yok"}</strong>
+        <button className="text-button" onClick={() => go(reminder?.date ? `takvim/${reminder.date}` : "firsatlar")}>
+          {reminder?.date ? "Takvimde gör" : "Fırsatlara bak"}
+          <ArrowRight size={15} />
+        </button>
+      </div>
+      <div>
+        <span className="eyebrow">ÖĞRETMENİN</span>
+        <strong>
+          {lastReply
+            ? "Rehber öğretmenin yanıt verdi"
+            : pendingReplies
+              ? "Talebin öğretmeninde"
+              : "Takıldığın bir yer olursa yaz"}
+        </strong>
+        <button className="text-button" onClick={() => go("deneyimlerim")}>
+          {lastReply || pendingReplies ? "Paylaşımlarına bak" : "Öğretmenimle konuşmak istiyorum"}
+          <ArrowRight size={15} />
+        </button>
+      </div>
+    </section>
   );
 }

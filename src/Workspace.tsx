@@ -25,7 +25,14 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { opportunityById } from "./catalog";
-import { calendarEvents, exportCalendar, setTask, validDate } from "./engine";
+import {
+  calendarEvents,
+  classSummary,
+  exportCalendar,
+  setTask,
+  validDate,
+  withdrawRequest,
+} from "./engine";
 import type { CalendarEvent } from "./engine";
 import {
   DEMO_TODAY,
@@ -683,7 +690,7 @@ export function MemoriesPage() {
         <section className="panel requests-history">
           <SectionHead
             title="Öğretmeninle paylaştıkların"
-            note="Yalnızca onaylayıp gönderdiğin talepler."
+            note="Rehber öğretmenin yalnızca burada gördüğün özeti ve talebi görür. Notların, değerlendirme cevapların ve ölçek sonuçların paylaşılmaz. Fikrini değiştirirsen paylaşımı geri çekebilirsin."
           />
           {[...state.requests].reverse().map((request) => (
             <div className="request-history" key={request.id}>
@@ -705,6 +712,18 @@ export function MemoriesPage() {
                     <p>{request.reply}</p>
                   </div>
                 ) : null}
+                <button
+                  className="text-button withdraw-share"
+                  onClick={() => {
+                    setState((previous) => withdrawRequest(previous, request.id));
+                    toast.success("Paylaşım geri çekildi.", {
+                      description:
+                        "Bu özet ve talep artık öğretmen görünümünde yer almıyor.",
+                    });
+                  }}
+                >
+                  Paylaşımı geri çek
+                </button>
               </div>
             </div>
           ))}
@@ -739,6 +758,7 @@ export function TeacherPage() {
         </div>
         <span className="pill purple">Okul içi</span>
       </div>
+      <ClassSummaryPanel />
       <section>
         <SectionHead
           title="Senden bir yanıt bekleyenler"
@@ -1045,5 +1065,52 @@ export function DemoPage() {
         </button>
       ) : null}
     </>
+  );
+}
+
+function ClassSummaryPanel() {
+  const { state } = useApp();
+  const summary = classSummary(state);
+  return (
+    <section className="panel class-summary">
+      <SectionHead
+        title="Sınıfın fırsat özeti"
+        note={`${summary.className} · Yalnızca sayılar ve tarihler. Ad, not veya ölçek sonucu yok. Sayılar örnek veridir; demo öğrencinin kayıtları canlı eklenir.`}
+      />
+      <div className="class-summary-stats">
+        <div>
+          <strong>
+            {summary.followingStudents}/{summary.students}
+          </strong>
+          <span>öğrenci bir fırsatı takip ediyor</span>
+        </div>
+        <div>
+          <strong>{summary.teamSeekers}</strong>
+          <span>öğrenci ekip arıyor</span>
+        </div>
+        <div>
+          <strong>{summary.meetingRequests}</strong>
+          <span>görüşme talebi yanıt bekliyor</span>
+        </div>
+      </div>
+      {summary.rows.length ? (
+        <ul className="class-summary-list">
+          {summary.rows.map(({ item, count, days }) => (
+            <li key={item.id}>
+              <span>
+                <strong>{item.title}</strong>
+                <small>
+                  Son başvuru {formatDate(item.deadline!, true)} · {days} gün
+                </small>
+              </span>
+              <span className="pill purple">{count} öğrenci</span>
+            </li>
+          ))}
+        </ul>
+      ) : null}
+      <p className="class-summary-note">
+        Öneri: Son tarihi yaklaşan fırsat için sınıf rehberlik saatinde 5 dakikalık bir hatırlatma yapılabilir.
+      </p>
+    </section>
   );
 }

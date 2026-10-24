@@ -24,6 +24,7 @@ import {
   goalLabels,
   isSenior,
   personas,
+  cityOptions,
 } from "./model";
 import type { Field, Grade, Profile } from "./model";
 import { Brand, Choice, OrbitArt, go, useApp } from "./ui";
@@ -467,6 +468,19 @@ export default function Onboarding() {
                           onClick={() => patch({ hours })}
                         >
                           {hours === 1 ? "1 saate kadar" : `${hours} saat`}
+                        </button>
+                      ))}
+                    </div>
+                    <label className="field-label">Hangi ildesin?</label>
+                    <div className="segmented">
+                      {cityOptions.map((city) => (
+                        <button
+                          key={city}
+                          aria-pressed={profile.city === city}
+                          className={profile.city === city ? "active" : ""}
+                          onClick={() => patch({ city })}
+                        >
+                          {city}
                         </button>
                       ))}
                     </div>

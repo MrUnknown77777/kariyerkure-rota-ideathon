@@ -4,7 +4,11 @@ import {
   addReflection,
   calendarEvents,
   createTrack,
+  classSummary,
+  distinctReasons,
   eligibility,
+  upcomingReminder,
+  withdrawRequest,
   exportCalendar,
   loadState,
   persistState,
@@ -55,7 +59,7 @@ describe("personalization and honest eligibility", () => {
       b.map((item) => [item.item.id, item.score]),
     );
     expect(
-      a.find((item) => item.item.id === "technovation")?.reasons[0],
+      a.find((item) => item.item.id === "technovation")?.reasons.join(" "),
     ).toContain("Bilgisayar");
     const unrelated = recommendations(
       starting({ ...p, departments: ["hukuk"] }),
@@ -397,5 +401,75 @@ describe("safe versioned persistence", () => {
     expect(validDate("2026-02-30")).toBe(false);
     expect(validDate("2026-10-24")).toBe(true);
     expect(datePlus("2026-10-31", 1)).toBe("2026-11-01");
+  });
+});
+
+describe("A2: Neden sana? gerekçeleri", () => {
+  it("puts interest + kind reason before the target department reason", () => {
+    const result = recommendations(starting(personas.defne)).find(
+      (value) => value.item.id === "technovation",
+    )!;
+    expect(result.reasons[0]).toContain("ilgini");
+    expect(result.reasons[0]).toContain("yarışmada");
+    expect(result.reasons.join(" ")).toContain("Bilgisayar");
+  });
+  it("gives distinct card reasons across the first four suggestions", () => {
+    const results = recommendations(starting(personas.defne));
+    const chosen = distinctReasons(results);
+    const firstFour = results.slice(0, 4).map((value) => chosen.get(value.item.id));
+    expect(new Set(firstFour).size).toBe(firstFour.length);
+  });
+  it("still explains suggestions when no interest is selected", () => {
+    const results = recommendations(
+      starting({ ...personas.deniz, interests: [] }),
+    );
+    for (const value of results) expect(value.reasons[0]).toBeTruthy();
+  });
+});
+
+
+describe("A3, mahremiyet ve öğretmen özeti", () => {
+  it("reminds about the nearest followed deadline with real day count", () => {
+    const state = toggleSaved(starting(personas.defne), "technovation");
+    const reminder = upcomingReminder(state)!;
+    expect(reminder.description).toContain("Technovation");
+    expect(reminder.description).toContain("139 gün");
+  });
+  it("has no reminder when nothing is followed", () =>
+    expect(upcomingReminder(starting(personas.defne))).toBeNull());
+  it("withdrawing a share removes it from the teacher view", () => {
+    const state = {
+      ...starting(personas.defne),
+      requests: [
+        { id: "r1", type: "gorusme" as const, summary: "x", availability: "y", createdAt: "2026-10-24" },
+      ],
+    };
+    expect(withdrawRequest(state, "r1").requests).toHaveLength(0);
+  });
+  it("class summary contains only counts and adds the live student", () => {
+    const before = classSummary(starting(personas.defne));
+    const after = classSummary(toggleSaved(starting(personas.defne), "technovation"));
+    const count = (s: typeof before) =>
+      s.rows.find((row) => row.item.id === "technovation")?.count ?? 0;
+    expect(count(after)).toBe(count(before) + 1);
+    expect(JSON.stringify(after)).not.toContain("Defne");
+  });
+});
+
+describe("A1: konum ve il kısıtı", () => {
+  const item = () => opportunityById("ankara-robotik-atolye")!;
+  it("excludes a city-restricted opportunity for students in another city", () =>
+    expect(eligibility(item(), { ...personas.defne, city: "İstanbul" })[0]).toContain(
+      "Yalnızca Ankara",
+    ));
+  it("accepts it for students in that city", () =>
+    expect(eligibility(item(), { ...personas.defne, city: "Ankara" })).toHaveLength(0));
+  it("does not exclude when the student's city is unknown", () =>
+    expect(eligibility(item(), { ...personas.defne, city: undefined })).toHaveLength(0));
+  it("explains online participation as a practical reason", () => {
+    const result = recommendations(starting(personas.defne)).find(
+      (value) => value.item.id === "technovation",
+    )!;
+    expect(result.reasons.join(" ")).toContain("Çevrim içi");
   });
 });

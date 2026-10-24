@@ -229,8 +229,8 @@ export function OrbitArt({ compact = false }: { compact?: boolean }) {
       <svg viewBox="0 0 400 330">
         <defs>
           <linearGradient id="orb" x1="0" y1="0" x2="1" y2="1">
-            <stop stopColor="#b9acff" />
-            <stop offset="1" stopColor="#6246e5" />
+            <stop stopColor="#9fe7e1" />
+            <stop offset="1" stopColor="#148d83" />
           </linearGradient>
         </defs>
         <ellipse

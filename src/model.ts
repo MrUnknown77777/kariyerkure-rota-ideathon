@@ -26,6 +26,8 @@ export interface Profile {
   target: string;
   departments?: string[];
   universities?: string[];
+  /** A1 · Öğrencinin ili (il kısıtlı fırsatların uygunluğu için). İsteğe bağlı. */
+  city?: string;
 }
 
 export interface Opportunity {
@@ -59,6 +61,12 @@ export interface Opportunity {
   feeNote?: string;
   deadlineTime?: string;
   eventLabel?: string;
+  /** A1 · Katılım biçimi. Yoksa erişim alanından türetilir. */
+  mode?: "cevrimici" | "yuzyuze" | "hibrit";
+  /** A1 · Etkinliğin yapıldığı şehir (bilgi). */
+  city?: string;
+  /** A1 · Yalnızca bu illerdeki öğrencilere açıksa (uygunluk kısıtı). */
+  onlyCities?: string[];
 }
 
 export interface Task {
@@ -115,6 +123,12 @@ export interface State {
   exams: ExamRecord[];
   reminders?: { opportunityId: string; date: string; done: boolean }[];
 }
+export const cityOptions = ["İstanbul", "Ankara", "İzmir", "Diğer"] as const;
+export const modeLabels = {
+  cevrimici: "Çevrim içi",
+  yuzyuze: "Yüz yüze",
+  hibrit: "Çevrim içi + yüz yüze",
+} as const;
 export const DEMO_TODAY = "2026-10-24";
 export const STORAGE_KEY = "kariyerkure-rota:demo:v1";
 export const fieldLabels: Record<Field, string> = {
@@ -160,6 +174,7 @@ export const personas: Record<string, Profile> = {
     goal: "uret",
     interests: ["teknoloji", "tasarim"],
     target: "İlk ekip projemi yapmak",
+    city: "İstanbul",
     departments: ["bilgisayar", "endustriyel-tasarim"],
     universities: ["itu", "odtu"],
   },

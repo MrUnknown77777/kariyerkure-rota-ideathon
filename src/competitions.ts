@@ -16,6 +16,7 @@ export const competitions: Opportunity[] = [
   {
     ...base,
     id: "technovation",
+    mode: "cevrimici",
     title: "Technovation Challenge",
     provider: "Technovation",
     organization: "technovation",
@@ -51,6 +52,7 @@ export const competitions: Opportunity[] = [
   {
     ...base,
     id: "diamond-challenge",
+    mode: "cevrimici",
     title: "Diamond Challenge",
     provider: "University of Delaware · Horn Entrepreneurship",
     organization: "diamond",
@@ -84,6 +86,7 @@ export const competitions: Opportunity[] = [
   {
     ...base,
     id: "conrad-challenge",
+    mode: "cevrimici",
     title: "Conrad Challenge",
     provider: "Space Center Houston",
     organization: "conrad",
@@ -118,6 +121,7 @@ export const competitions: Opportunity[] = [
   {
     ...base,
     id: "teknofest-insanlik",
+    mode: "hibrit",
     title: "TEKNOFEST · İnsanlık Yararına Teknolojiler",
     provider: "TEKNOFEST · Lise seviyesi",
     organization: "teknofest",
@@ -144,6 +148,7 @@ export const competitions: Opportunity[] = [
   {
     ...base,
     id: "teknofest-biyoteknoloji",
+    mode: "hibrit",
     title: "TEKNOFEST · Biyoteknoloji İnovasyon",
     provider: "TEKNOFEST",
     organization: "teknofest",
@@ -170,6 +175,7 @@ export const competitions: Opportunity[] = [
   {
     ...base,
     id: "tubitak-kutup",
+    mode: "hibrit",
     title: "TÜBİTAK 2204-C · Kutup Araştırmaları",
     provider: "TÜBİTAK · TEKNOFEST",
     organization: "tubitak",
@@ -195,6 +201,7 @@ export const competitions: Opportunity[] = [
   {
     ...base,
     id: "tubitak-iklim",
+    mode: "hibrit",
     title: "TÜBİTAK 2204-D · İklim Değişikliği",
     provider: "TÜBİTAK · TEKNOFEST",
     organization: "tubitak",
@@ -221,6 +228,7 @@ export const competitions: Opportunity[] = [
   {
     ...base,
     id: "kanguru-matematik",
+    mode: "yuzyuze",
     organization: "kanguru",
     title: "Kanguru Matematik Türkiye",
     provider: "Kanguru Matematik Türkiye",
@@ -251,6 +259,7 @@ export const competitions: Opportunity[] = [
   {
     ...base,
     id: "john-locke-essay",
+    mode: "cevrimici",
     organization: "johnlocke",
     title: "John Locke · Global Essay Prize",
     provider: "John Locke Institute",
