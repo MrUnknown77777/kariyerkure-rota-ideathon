@@ -206,8 +206,8 @@ function search(){
  var cn=E('','','left:160px;top:118px;font-size:22px;color:#70757A',rp);
  at(2300,function(){var t0=performance.now(),g=G;(function f(){if(g!==G)return;var p=Math.min(1,(performance.now()-t0)/900);cn.textContent='Yaklaşık '+Math.round(p*p*1e6).toLocaleString('tr-TR')+' sonuç';if(p<1)requestAnimationFrame(f)})()});
  var lw=E('','','left:0;top:166px;width:1800px;height:718px;overflow:hidden',rp),ls=E('','','left:160px;top:0;width:960px',lw);
- RS.forEach(function(r,n){var it=F('r','<b><u style="background:'+FC[n%5]+'"></u>'+r[0]+'</b><strong>'+r[1]+(r[2]?'<span style="background:'+r[3]+'">'+r[2]+'</span>':'')+'</strong><em>'+D[n%2]+'</em>','',ls);if(n<5)A(it,[{opacity:0,transform:'translateY(20px)'},{opacity:1,transform:'none'}],2400+n*110,400)});
- A(ls,[{transform:'translateY(0)'},{transform:'translateY(-1700px)'}],4400,3300,'cubic-bezier(.5,0,.75,.6)','forwards');
+ RS.concat(RS).forEach(function(r,n){var it=F('r','<b><u style="background:'+FC[n%5]+'"></u>'+r[0]+'</b><strong>'+r[1]+(r[2]?'<span style="background:'+r[3]+'">'+r[2]+'</span>':'')+'</strong><em>'+D[n%2]+'</em>','',ls);if(n<5)A(it,[{opacity:0,transform:'translateY(20px)'},{opacity:1,transform:'none'}],2400+n*110,400)});
+ A(ls,[{transform:'translateY(0)'},{transform:'translateY(-2600px)'}],4400,4400,'cubic-bezier(.45,0,.2,1)','forwards');
  var rel=E('','<p style="font-size:24px;margin-bottom:18px">İlgili aramalar</p>','left:1250px;top:166px;width:440px',rp);
  ['robot yarışması başvuru 2026','lise yarışmaları listesi','yarışma takımı nasıl kurulur','ücretsiz robotik kursu'].forEach(function(t,n){A(F('ch',t,'',rel),IN,2900+n*140,300)});
  var cur=E('',CUR,'left:0;top:0;z-index:60');
@@ -235,11 +235,14 @@ function brandIn(){
  A(dot,[{transform:'scale(0)'},{transform:'scale(1.2)'},{transform:'scale(1)'}],550,500,BO);
  for(var i=0;i<3;i++){var rg=E('','','left:860px;top:440px;width:200px;height:200px;border-radius:50%;border:3px solid #5EEAD4;z-index:89');A(rg,[{transform:'scale(.3)',opacity:.9},{transform:'scale('+(3+i)+')',opacity:0}],800+i*220,1300,'ease-out')}
  A(dot,[{transform:'scale(1)',opacity:1},{transform:'scale(.2)',opacity:0}],1250,350,IO,'forwards');
- var lg=E('','<div style="display:flex;align-items:center;gap:30px"><img src="'+KK+'" style="height:110px"><div><b style="display:block;font-size:110px;font-weight:500;color:#F8FAFC;letter-spacing:-2px;line-height:1">kariyer<span style="font-weight:800">küre</span></b><small style="display:block;font-size:26px;letter-spacing:12px;color:#94A3B8;font-weight:700;margin-top:12px">DENE, SEÇ, DARALT</small></div></div>','left:0;top:420px;width:1920px;display:flex;justify-content:center;z-index:91');
- A(lg,[{opacity:0,transform:'scale(.7)',filter:'blur(10px)'},{opacity:1,transform:'scale(1)',filter:'blur(0)'}],1300,800,BO);
- var sub=E('','Altı kısa soruyla rotası başlıyor.','left:0;top:660px;width:1920px;text-align:center;font-size:44px;font-weight:600;color:#5EEAD4;z-index:91');A(sub,UP,1900,600);
+ var cd=E('','','left:410px;top:362px;width:1100px;height:276px;border-radius:40px;background:#F8FAFC;box-shadow:0 30px 80px rgba(0,0,0,.35);z-index:90');
+ A(cd,[{opacity:0,transform:'scaleX(0) scaleY(.06)'},{opacity:1,transform:'scaleX(1) scaleY(.06)',offset:.55},{opacity:1,transform:'scale(1)'}],1050,750,IO);
+ A(cd,[{opacity:1,transform:'none'},{opacity:0,transform:'translateY(-120px) scale(.8)'}],3000,600,IO,'forwards');
+ var lg=E('','<div style="display:flex;align-items:center;gap:30px"><img src="'+KK+'" style="height:110px"><div><b style="display:block;font-size:110px;font-weight:500;color:#14293D;letter-spacing:-2px;line-height:1">kariyer<span style="font-weight:800">küre</span></b><small style="display:block;font-size:26px;letter-spacing:12px;color:#64748B;font-weight:700;margin-top:12px">DENE, SEÇ, DARALT</small></div></div>','left:0;top:420px;width:1920px;display:flex;justify-content:center;z-index:91');
+ A(lg,[{opacity:0,transform:'scale(.7)',filter:'blur(10px)'},{opacity:1,transform:'scale(1)',filter:'blur(0)'}],1550,700,BO);
+ var sub=E('','Altı kısa soruyla rotası başlıyor.','left:0;top:672px;width:1920px;text-align:center;font-size:44px;font-weight:600;color:#5EEAD4;z-index:91');A(sub,UP,1900,600);
  A(lg,[{opacity:1,transform:'none'},{opacity:0,transform:'translateY(-120px) scale(.8)'}],3000,600,IO,'forwards');A(sub,FX,3000,400,EZ,'forwards');
- at(3700,function(){QZ.forEach(function(h){h.remove()});dot.remove();lg.remove();sub.remove()});
+ at(3700,function(){QZ.forEach(function(h){h.remove()});dot.remove();lg.remove();cd.remove();sub.remove()});
  return ov}
 /* ============ GÖRÜNÜM + AKIŞ ÇUBUĞU ============ */
 var VS=.84,VX=153.6,VY=116.4,BAND=null,CAPS=null,STEPN=0;
@@ -492,8 +495,9 @@ function outro(){
  var sec=E('','DÜZENLİ KATILIM','left:0;top:230px;width:1920px;text-align:center;font-size:24px;font-weight:800;letter-spacing:8px;color:#5EEAD4;z-index:63');A(sec,IN,1500,600);
  ['Fırsatı bul.','Hazırlan.','Kaçırma.'].forEach(function(t,i){var e=E('','<span style="display:inline-block">'+t+'</span>','left:0;top:'+(300+i*130)+'px;width:1920px;text-align:center;font-size:120px;font-weight:800;letter-spacing:-2px;color:'+(i===2?'#5EEAD4':'#F8FAFC')+';z-index:63');A(e.firstChild,[{opacity:0,transform:'translateY(80px)',filter:'blur(10px)'},{opacity:1,transform:'none',filter:'blur(0)'}],1600+i*450,700,BO)});
  var ln=E('','','left:810px;top:720px;width:300px;height:6px;border-radius:3px;background:#B08854;z-index:63');A(ln,[{transform:'scaleX(0)'},{transform:'scaleX(1)'}],3100,600,IO);
- var lg=E('','<div style="display:flex;align-items:center;gap:18px"><img src="'+KK+'" style="height:52px"><b style="font-size:44px;font-weight:500;color:#F8FAFC">kariyer<span style="font-weight:800">küre</span> <span style="color:#5EEAD4;font-weight:800">Rota</span></b></div>','left:0;top:780px;width:1920px;display:flex;justify-content:center;z-index:63');A(lg,UP,3400,700);
- var hint=E('','Tekrar izlemek için tıkla','left:0;top:1010px;width:1920px;text-align:center;font-size:22px;color:#64748B;z-index:63');A(hint,IN,5500,800);
+ var cd=E('','','left:610px;top:756px;width:700px;height:104px;border-radius:52px;background:#F8FAFC;box-shadow:0 24px 60px rgba(0,0,0,.35);z-index:63');
+ A(cd,[{opacity:0,transform:'scaleX(0) scaleY(.1)'},{opacity:1,transform:'scaleX(1) scaleY(.1)',offset:.55},{opacity:1,transform:'scale(1)'}],3300,700,IO);
+ var lg=E('','<div style="display:flex;align-items:center;gap:18px"><img src="'+KK+'" style="height:52px"><b style="font-size:44px;font-weight:500;color:#14293D">kariyer<span style="font-weight:800">küre</span> <span style="color:#0F766E;font-weight:800">Rota</span></b></div>','left:0;top:780px;width:1920px;display:flex;justify-content:center;z-index:64');A(lg,UP,3700,600);
 }
 /* ============ ZAMAN ÇİZELGESİ ============ */
 function run(){
